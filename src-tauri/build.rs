@@ -1,0 +1,33 @@
+fn main() {
+    tauri_build::try_build(tauri_build::Attributes::new().app_manifest(
+        tauri_build::AppManifest::new().commands(&[
+            "list_accounts",
+            "create_account",
+            "rename_account",
+            "set_account_color",
+            "remove_account",
+            "focus_account",
+            "focus_shell",
+            "move_account",
+            "cycle_account",
+            "set_browser_identity",
+            "list_surfaces",
+            "open_under",
+            "show_surface",
+            "show_settings",
+            "set_rail_collapsed",
+            "set_app_hidden",
+            "close_surface",
+            "reload_surface",
+            "reveal_download",
+            "new_tab",
+            "close_tab",
+            "move_tab",
+            "set_calls_native",
+            "set_sleep_after",
+            "set_page_theme",
+            "quit",
+        ]),
+    ))
+    .expect("failed to run tauri build");
+}

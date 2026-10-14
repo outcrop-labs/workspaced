@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-set-sleep-after"
+description = "Enables the set_sleep_after command without any pre-configured scope."
+commands.allow = ["set_sleep_after"]
+
+[[permission]]
+identifier = "deny-set-sleep-after"
+description = "Denies the set_sleep_after command without any pre-configured scope."
+commands.deny = ["set_sleep_after"]

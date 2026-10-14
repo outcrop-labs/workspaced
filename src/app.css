@@ -1,0 +1,99 @@
+:root {
+	color-scheme: dark;
+	font-family: "Adwaita Sans", sans-serif;
+	font-size: 13px;
+	line-height: 1.4;
+	background: var(--bg-darker);
+	color: var(--fg);
+	--bg: #16181d;
+	--bg-dark: #101216;
+	--bg-darker: #0c0e12;
+	--bg-light: #22262e;
+	--fg: #e7e4df;
+	--fg-dim: #9a958c;
+	--fg-bright: #f7f4ef;
+	--accent: #e8a54b;
+	--on-accent: #101418;
+	--muted: #343a44;
+	--selection: #2a241c;
+	--danger: #d4534a;
+
+	--line: color-mix(in srgb, var(--fg) 10%, transparent);
+	--hover: color-mix(in srgb, var(--fg) 7%, transparent);
+	--press: color-mix(in srgb, var(--fg) 12%, transparent);
+	--ease: cubic-bezier(0.2, 0, 0, 1);
+	--fast: 120ms;
+	--base: 180ms;
+	/* Width of the native sidebar pane. Keep in step with SIDEBAR in viewport.rs. */
+	--rail: 300px;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	height: 100%;
+	overflow: hidden;
+	background: var(--bg-darker);
+	color: var(--fg);
+	user-select: none;
+	-webkit-user-select: none;
+	cursor: default;
+}
+
+button,
+input {
+	font: inherit;
+	color: inherit;
+}
+
+button {
+	cursor: pointer;
+}
+
+button:disabled {
+	cursor: default;
+}
+
+input {
+	user-select: text;
+	-webkit-user-select: text;
+}
+
+input::selection {
+	background: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+:focus {
+	outline: none;
+}
+
+:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+	width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+	border-radius: 4px;
+	background: transparent;
+}
+
+:hover::-webkit-scrollbar-thumb {
+	background: var(--line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		transition-duration: 1ms !important;
+		animation-duration: 1ms !important;
+	}
+}

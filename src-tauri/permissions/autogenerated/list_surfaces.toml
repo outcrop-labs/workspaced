@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-list-surfaces"
+description = "Enables the list_surfaces command without any pre-configured scope."
+commands.allow = ["list_surfaces"]
+
+[[permission]]
+identifier = "deny-list-surfaces"
+description = "Denies the list_surfaces command without any pre-configured scope."
+commands.deny = ["list_surfaces"]

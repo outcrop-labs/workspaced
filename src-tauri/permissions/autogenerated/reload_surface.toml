@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-reload-surface"
+description = "Enables the reload_surface command without any pre-configured scope."
+commands.allow = ["reload_surface"]
+
+[[permission]]
+identifier = "deny-reload-surface"
+description = "Denies the reload_surface command without any pre-configured scope."
+commands.deny = ["reload_surface"]

@@ -1,0 +1,56 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Workspaced",
+  "identifier": "app.workspaced",
+  "build": {
+    "frontendDist": "../build",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "shell",
+        "title": "Workspaced",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 960,
+        "minHeight": 640,
+        "resizable": true,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "android": {
+      "debugApplicationIdSuffix": ".debug"
+    },
+    "shortDescription": "Several Google Workspace accounts, signed in at once",
+    "category": "Productivity",
+    "linux": {
+      "deb": {
+        "desktopTemplate": "workspaced.desktop"
+      },
+      "rpm": {
+        "desktopTemplate": "workspaced.desktop"
+      }
+    },
+    "macOS": {
+      "entitlements": "Entitlements.plist"
+    }
+  },
+  "mainBinaryName": "workspaced"
+}

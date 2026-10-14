@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-show-surface"
+description = "Enables the show_surface command without any pre-configured scope."
+commands.allow = ["show_surface"]
+
+[[permission]]
+identifier = "deny-show-surface"
+description = "Denies the show_surface command without any pre-configured scope."
+commands.deny = ["show_surface"]

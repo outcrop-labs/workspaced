@@ -1,0 +1,38 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "shell",
+  "description": "Shell window can manage accounts. Google pages cannot.",
+  "windows": [
+    "shell"
+  ],
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "allow-list-accounts",
+    "allow-create-account",
+    "allow-rename-account",
+    "allow-set-account-color",
+    "allow-remove-account",
+    "allow-focus-account",
+    "allow-focus-shell",
+    "allow-move-account",
+    "allow-cycle-account",
+    "allow-set-browser-identity",
+    "allow-list-surfaces",
+    "allow-open-under",
+    "allow-show-surface",
+    "allow-show-settings",
+    "allow-set-rail-collapsed",
+    "allow-set-app-hidden",
+    "allow-close-surface",
+    "allow-reload-surface",
+    "allow-reveal-download",
+    "allow-new-tab",
+    "allow-close-tab",
+    "allow-move-tab",
+    "allow-set-calls-native",
+    "allow-set-sleep-after",
+    "allow-set-page-theme",
+    "allow-quit"
+  ]
+}

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-focus-shell"
+description = "Enables the focus_shell command without any pre-configured scope."
+commands.allow = ["focus_shell"]
+
+[[permission]]
+identifier = "deny-focus-shell"
+description = "Denies the focus_shell command without any pre-configured scope."
+commands.deny = ["focus_shell"]

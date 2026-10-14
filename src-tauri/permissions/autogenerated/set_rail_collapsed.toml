@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-set-rail-collapsed"
+description = "Enables the set_rail_collapsed command without any pre-configured scope."
+commands.allow = ["set_rail_collapsed"]
+
+[[permission]]
+identifier = "deny-set-rail-collapsed"
+description = "Denies the set_rail_collapsed command without any pre-configured scope."
+commands.deny = ["set_rail_collapsed"]

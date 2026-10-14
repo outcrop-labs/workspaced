@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-open-under"
+description = "Enables the open_under command without any pre-configured scope."
+commands.allow = ["open_under"]
+
+[[permission]]
+identifier = "deny-open-under"
+description = "Denies the open_under command without any pre-configured scope."
+commands.deny = ["open_under"]

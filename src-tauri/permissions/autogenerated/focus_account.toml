@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-focus-account"
+description = "Enables the focus_account command without any pre-configured scope."
+commands.allow = ["focus_account"]
+
+[[permission]]
+identifier = "deny-focus-account"
+description = "Denies the focus_account command without any pre-configured scope."
+commands.deny = ["focus_account"]
