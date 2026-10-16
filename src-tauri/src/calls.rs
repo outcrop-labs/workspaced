@@ -7,7 +7,9 @@
 //! Without WebRTC (WebKitGTK as distributions build it today) Meet links open
 //! as app windows of a Chromium-family browser, each account with its own
 //! profile under the app data directory, so accounts stay as separate there
-//! as they are here.
+//! as they are here. With no such browser to start, as inside a Flatpak
+//! sandbox, they open in the default browser instead, with `authuser`
+//! naming the account.
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -30,7 +32,28 @@ pub fn native() -> bool {
 
 /// Whether calls leave the app for a browser.
 pub fn external() -> bool {
-    !native() && browser().is_some()
+    !native()
+}
+
+/// A Meet link that signs in as the given account in a browser shared by
+/// several, as the default browser is.
+pub fn with_account(raw: &str, email: Option<&str>) -> Result<String> {
+    if !is_call(raw) {
+        anyhow::bail!("not a Meet link");
+    }
+    let mut url = url::Url::parse(raw)?;
+    if let Some(email) = email {
+        let rest = url
+            .query_pairs()
+            .filter(|(key, _)| key != "authuser")
+            .map(|(key, value)| (key.into_owned(), value.into_owned()))
+            .collect::<Vec<_>>();
+        url.query_pairs_mut()
+            .clear()
+            .extend_pairs(rest)
+            .append_pair("authuser", email);
+    }
+    Ok(url.into())
 }
 
 /// Browsers that run Meet, best first, as executables looked up on PATH.

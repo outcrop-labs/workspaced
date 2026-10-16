@@ -172,6 +172,15 @@ mod tests {
             "https://meet.google.com/hangouts/frame"
         ));
         assert_eq!(
+            crate::calls::with_account(
+                "https://meet.google.com/abc-defg-hij?authuser=0&hs=1",
+                Some("me@example.com")
+            )
+            .unwrap(),
+            "https://meet.google.com/abc-defg-hij?hs=1&authuser=me%40example.com"
+        );
+        assert!(crate::calls::with_account("https://evil.com/x", None).is_err());
+        assert_eq!(
             document(&format!("https://drive.google.com/file/d/{id}/preview")),
             None
         );

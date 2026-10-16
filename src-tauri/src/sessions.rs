@@ -222,7 +222,8 @@ pub fn split_label(label: &str) -> Option<(&str, &str)> {
     label.strip_prefix("view-")?.rsplit_once('-')
 }
 
-/// Opens a Meet link in the account's browser profile. See `calls`.
+/// Opens a Meet link in the account's browser profile, or in the default
+/// browser when there is no Chromium-family one to start. See `calls`.
 pub fn open_call(app: &AppHandle, account_id: &str, url: &str) -> Result<()> {
     // A backstop against anything that asks over and over: one window per account at a time.
     static LAST: Mutex<Option<(String, Instant)>> = Mutex::new(None);
@@ -237,19 +238,23 @@ pub fn open_call(app: &AppHandle, account_id: &str, url: &str) -> Result<()> {
         }
         *last = Some((account_id.to_owned(), Instant::now()));
     }
-    let profiles = {
+    let (profiles, email) = {
         let state = app.state::<AppState>();
         let desks = lock(&state);
-        if !desks
+        let account = desks
             .accounts()
             .iter()
-            .any(|account| account.id == account_id)
-        {
-            anyhow::bail!("account not found");
-        }
-        desks.call_profiles()
+            .find(|account| account.id == account_id)
+            .context("account not found")?;
+        (desks.call_profiles(), account.email.clone())
     };
-    calls::open(&profiles, account_id, url)
+    if calls::browser().is_some() {
+        return calls::open(&profiles, account_id, url);
+    }
+    let url = calls::with_account(url, email.as_deref())?;
+    app.opener()
+        .open_url(url, None::<&str>)
+        .context("open the call in the default browser")
 }
 
 /// Sends a Meet link to the browser if there is one. Returns whether it did.

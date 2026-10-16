@@ -76,9 +76,9 @@
 				there once per account. Once the webview gains WebRTC, calls move into the app by themselves.
 			</p>
 		{:else}
-			<p class="warn">
-				Calls and Meet need Chromium or Google Chrome. The webview here has no WebRTC, so Gmail warns that
-				calls may not work. Install Chromium and calls will open in it, one profile per account.
+			<p>
+				Meet links and calls open in your default browser, signed in as the account they came from, because
+				this system's webview has no WebRTC. Once the webview gains WebRTC, calls move into the app by themselves.
 			</p>
 		{/if}
 	</section>
@@ -253,13 +253,6 @@
 		max-width: 46ch;
 		color: var(--fg-dim);
 		line-height: 1.5;
-	}
-
-	.warn {
-		padding: 10px 12px;
-		border-radius: 10px;
-		background: color-mix(in srgb, var(--danger) 12%, transparent);
-		color: var(--fg);
 	}
 
 	strong {
