@@ -1,6 +1,6 @@
 [package]
 name = "workspaced"
-version = "0.1.0"
+version = "0.1.1"
 description = "Multi-account Google Workspace desktop"
 authors = ["Outcrop Labs"]
 license = "MIT"
