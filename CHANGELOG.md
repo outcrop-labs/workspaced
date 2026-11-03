@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.2](https://github.com/outcrop-labs/workspaced/compare/workspaced-v0.1.1...workspaced-v0.1.2) (2026-11-03)
+
+
+### Bug Fixes
+
+* gate the crashed-surface handler to Linux ([15d5a83](https://github.com/outcrop-labs/workspaced/commit/15d5a8332fbc7c03902bc7b5b250a48271ef5911))
+* stop AppImage tabs dying and bring crashed pages back ([0d0c27e](https://github.com/outcrop-labs/workspaced/commit/0d0c27e33a6ba45f304d2887673b9d4992c41934))
+* stop AppImage tabs dying and bring crashed pages back ([205f894](https://github.com/outcrop-labs/workspaced/commit/205f894c4aa8df72247587c3354a8aea2cf01cb0))
+
 ## [0.1.1](https://github.com/outcrop-labs/workspaced/compare/workspaced-v0.1.0...workspaced-v0.1.1) (2026-10-16)
 
 
