@@ -40,6 +40,8 @@
 		open: Set<string>;
 		/** Suite apps whose view is loading a page. */
 		loading: Set<string>;
+		/** Suite apps whose page process died and stayed dead. A click loads them again. */
+		crashed: Set<string>;
 		/** The apps to offer, already filtered by the user's choice. */
 		suite: SuiteApp[];
 		/** Every suite app, for tab icons. */
@@ -74,6 +76,7 @@
 		front,
 		open,
 		loading,
+		crashed,
 		suite,
 		icons,
 		alt,
@@ -157,7 +160,8 @@
 				class:front={front === app.id}
 				class:open={open.has(app.id)}
 				class:loading={loading.has(app.id)}
-				title={app.label}
+				class:crashed={crashed.has(app.id)}
+				title={crashed.has(app.id) ? `${app.label} crashed. Click to load it again.` : app.label}
 				aria-label={app.label}
 				aria-pressed={front === app.id}
 				onclick={() => onapp(app.id)}
@@ -185,12 +189,13 @@
 				class="tab"
 				class:front={front === tab.id}
 				class:loading={loading.has(tab.id)}
+				class:crashed={crashed.has(tab.id)}
 				animate:flip={{ duration: 200, easing: cubicOut }}
 				transition:slide={{ duration: 160 }}
 			>
 				<button
 					class="open"
-					title={titleOf(tab)}
+					title={crashed.has(tab.id) ? `${titleOf(tab)} crashed. Click to load it again.` : titleOf(tab)}
 					aria-label={titleOf(tab)}
 					aria-pressed={front === tab.id}
 					onclick={() => onapp(tab.id)}
@@ -904,6 +909,15 @@
 		animation: spin 800ms linear infinite;
 	}
 
+	/* A page whose process died: a still red ring until it is clicked. */
+	.tab.crashed .icon::before {
+		content: '';
+		position: absolute;
+		inset: -3px;
+		border: 1.5px solid var(--danger);
+		border-radius: 50%;
+	}
+
 	.title {
 		min-width: 0;
 		overflow: hidden;
@@ -972,6 +986,13 @@
 
 	.app.loading img {
 		transform: scale(0.82);
+	}
+
+	/* A page whose process died: a still red ring until it is clicked. */
+	.app.crashed::before {
+		opacity: 1;
+		border-color: var(--danger);
+		animation: none;
 	}
 
 	@keyframes spin {

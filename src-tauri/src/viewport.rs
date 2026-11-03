@@ -53,6 +53,20 @@ thread_local! {
 thread_local! {
     static SETTINGS_OPEN: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
+#[cfg(target_os = "linux")]
+thread_local! {
+    /// When each view's web process last died, by view label, so a page that
+    /// dies on every load is not reloaded without end.
+    static CRASHES: RefCell<std::collections::HashMap<String, Vec<std::time::Instant>>> =
+        RefCell::new(std::collections::HashMap::new());
+}
+/// A page whose web process dies is loaded again, as a browser does, up to
+/// this many times in [`CRASH_WINDOW`]. After that it stays blank until it is
+/// reloaded by hand.
+#[cfg(target_os = "linux")]
+const CRASH_LIMIT: usize = 3;
+#[cfg(target_os = "linux")]
+const CRASH_WINDOW: std::time::Duration = std::time::Duration::from_secs(120);
 pub fn show_surface(app: &AppHandle, label: &str) -> Result<()> {
     #[cfg(target_os = "linux")]
     {
@@ -363,6 +377,7 @@ fn reparent(webview: &Webview, label: &str) -> Result<()> {
         let gone = label;
         view.connect_destroy(move |_| {
             SURFACES.with(|map| map.borrow_mut().remove(&gone));
+            CRASHES.with(|map| map.borrow_mut().remove(&gone));
             FRONT.with(|front| {
                 let mut front = front.borrow_mut();
                 if front.as_deref() == Some(gone.as_str()) {
@@ -477,12 +492,45 @@ pub fn create_surface(
 }
 
 /// Linux-only extras for a Google view: notification clicks that switch to
-/// their account, and spellcheck. Titles and load state are tracked for every
-/// platform in `create_surface`. None of this gives the page any way to call
-/// into the app.
+/// their account, spellcheck, and a reload when the page's web process dies.
+/// Titles and load state are tracked for every platform in `create_surface`.
+/// None of this gives the page any way to call into the app.
 #[cfg(target_os = "linux")]
 fn instrument(app: &AppHandle, view: &webkit2gtk::WebView, label: &str) {
-    use webkit2gtk::{NotificationExt, WebContextExt, WebViewExt};
+    use webkit2gtk::{NotificationExt, WebContextExt, WebProcessTerminationReason, WebViewExt};
+
+    // WebKit runs each page in its own process and leaves the view blank when
+    // that process dies. Load the page again, as a browser does, unless it
+    // keeps dying: then the sidebar shows it as crashed and offers a reload.
+    {
+        let app = app.clone();
+        let label = label.to_owned();
+        view.connect_web_process_terminated(move |view, reason| {
+            if reason == WebProcessTerminationReason::TerminatedByApi {
+                return;
+            }
+            let now = std::time::Instant::now();
+            let again = CRASHES.with(|map| {
+                let mut map = map.borrow_mut();
+                let times = map.entry(label.clone()).or_default();
+                times.retain(|at| now.duration_since(*at) < CRASH_WINDOW);
+                times.push(now);
+                times.len() <= CRASH_LIMIT
+            });
+            log::warn!(
+                "{label}: web process {reason:?}; {}",
+                if again {
+                    "loading the page again"
+                } else {
+                    "left for a reload by hand"
+                }
+            );
+            if again {
+                view.reload();
+            }
+            crate::sessions::on_surface_crashed(&app, &label, again);
+        });
+    }
 
     {
         let app = app.clone();
