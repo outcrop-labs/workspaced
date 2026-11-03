@@ -7,6 +7,8 @@ node_modules
 .wrangler
 /.svelte-kit
 /build
+# Host libraries copied into the AppImage by scripts/appimage-libs.mjs
+/src-tauri/appimage
 
 # OS
 .DS_Store

@@ -84,6 +84,8 @@
 	let request = $state<MenuRequest | null>(null);
 	// Views with a page load in flight, as "account/suite".
 	let loading = $state(new Set<string>());
+	// Views whose page process died and stayed dead, as "account/suite". A click loads them again.
+	let crashed = $state(new Set<string>());
 	// What the user just clicked, shown as selected while the native switch is in flight.
 	let pending = $state.raw<{ id: string; app?: string } | null>(null);
 
@@ -106,16 +108,19 @@
 		}
 		return byAccount;
 	});
-	const loadingBy = $derived.by(() => {
-		const byAccount = new Map<string, Set<string>>();
-		for (const key of loading) {
+	// Splits "account/suite" keys into the suites of each account.
+	function byAccount(keys: Set<string>) {
+		const map = new Map<string, Set<string>>();
+		for (const key of keys) {
 			const [accountId, suiteId] = key.split('/');
-			const set = byAccount.get(accountId) ?? new Set<string>();
+			const set = map.get(accountId) ?? new Set<string>();
 			set.add(suiteId);
-			byAccount.set(accountId, set);
+			map.set(accountId, set);
 		}
-		return byAccount;
-	});
+		return map;
+	}
+	const loadingBy = $derived(byAccount(loading));
+	const crashedBy = $derived(byAccount(crashed));
 	const none = new Set<string>();
 	const icons = $derived(Object.fromEntries((snapshot?.suite ?? []).map((app) => [app.id, app.icon])));
 
@@ -174,7 +179,13 @@
 		settings = false;
 		if (editing !== id) editing = null;
 		const mine = (pending = { id, app });
-		await run(() => (app ? showSurface(id, app) : focusAccount(id)));
+		await run(async () => {
+			if (!app) return focusAccount(id);
+			const next = await showSurface(id, app);
+			// A page whose process died and stayed dead comes back on a click.
+			if (crashed.has(`${id}/${app}`)) await reloadSurface(id, app);
+			return next;
+		});
 		if (pending === mine) pending = null;
 	}
 
@@ -438,6 +449,7 @@
 		});
 		on<[string, string, boolean]>('surface-loading', ([accountId, suiteId, busy]) => {
 			const key = `${accountId}/${suiteId}`;
+			if (busy && crashed.has(key)) crashed = new Set([...crashed].filter((item) => item !== key));
 			if (busy === loading.has(key)) return;
 			const next = new Set(loading);
 			if (busy) next.add(key);
@@ -448,7 +460,15 @@
 		on<[string, string]>('surface-closed', ([accountId, suiteId]) => {
 			const key = `${accountId}/${suiteId}`;
 			if (loading.has(key)) loading = new Set([...loading].filter((item) => item !== key));
+			if (crashed.has(key)) crashed = new Set([...crashed].filter((item) => item !== key));
 			void refreshSurfaces();
+		});
+		// The view loads its page again by itself unless it keeps dying.
+		on<[string, string, boolean]>('surface-crashed', ([accountId, suiteId, reloading]) => {
+			const key = `${accountId}/${suiteId}`;
+			if (reloading) return;
+			if (loading.has(key)) loading = new Set([...loading].filter((item) => item !== key));
+			if (!crashed.has(key)) crashed = new Set([...crashed, key]);
 		});
 		on<DownloadEvent>('download', onDownload);
 		on<null>('open-settings', () => void openSettings());
@@ -495,6 +515,7 @@
 								front={frontOf(account.id)}
 								open={open.get(account.id) ?? none}
 								loading={loadingBy.get(account.id) ?? none}
+								crashed={crashedBy.get(account.id) ?? none}
 								onpick={() => show(account.id)}
 								onapp={(app) => show(account.id, app)}
 								onappmenu={(app, event) => appMenu(account, app, event)}

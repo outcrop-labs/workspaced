@@ -412,7 +412,22 @@ pub fn reload_surface(app: &AppHandle, account_id: &str, suite: &str) -> Result<
     let webview = app
         .get_webview(&surface_label(account_id, suite))
         .context("that app is not open")?;
-    webview.eval("location.reload()").context("reload app view")
+    // A real reload rather than a script: a page whose web process died has
+    // nowhere to run one.
+    webview.reload().context("reload app view")
+}
+
+/// A view's web process died. The view loads its page again by itself unless
+/// it keeps dying (`reloading` is false then); the sidebar hears either way so
+/// a dead page can be marked and reloaded by hand.
+pub fn on_surface_crashed(app: &AppHandle, label: &str, reloading: bool) {
+    let Some((account_id, suite)) = split_label(label) else {
+        return;
+    };
+    if suite == crate::lifecycle::POLL_SUITE {
+        return;
+    }
+    let _ = app.emit("surface-crashed", (account_id, suite, reloading));
 }
 
 /// Gmail titles read `Inbox (12) - ada@example.com - Gmail`. Returns the inbox

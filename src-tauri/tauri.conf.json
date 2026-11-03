@@ -6,7 +6,8 @@
     "frontendDist": "../build",
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "pnpm dev",
-    "beforeBuildCommand": "pnpm build"
+    "beforeBuildCommand": "pnpm build",
+    "beforeBundleCommand": "node scripts/appimage-libs.mjs"
   },
   "app": {
     "windows": [
@@ -41,6 +42,13 @@
     "shortDescription": "Several Google Workspace accounts, signed in at once",
     "category": "Productivity",
     "linux": {
+      "appimage": {
+        "bundleMediaFramework": true,
+        "files": {
+          "/usr/lib/libfreetype.so.6": "appimage/lib/libfreetype.so.6",
+          "/usr/lib/libharfbuzz.so.0": "appimage/lib/libharfbuzz.so.0"
+        }
+      },
       "deb": {
         "desktopTemplate": "workspaced.desktop"
       },
