@@ -420,6 +420,7 @@ pub fn reload_surface(app: &AppHandle, account_id: &str, suite: &str) -> Result<
 /// A view's web process died. The view loads its page again by itself unless
 /// it keeps dying (`reloading` is false then); the sidebar hears either way so
 /// a dead page can be marked and reloaded by hand.
+#[cfg(target_os = "linux")]
 pub fn on_surface_crashed(app: &AppHandle, label: &str, reloading: bool) {
     let Some((account_id, suite)) = split_label(label) else {
         return;
