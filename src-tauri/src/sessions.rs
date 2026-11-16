@@ -209,6 +209,38 @@ pub fn allow_navigation(app: &AppHandle, label: &str, raw: &str) -> bool {
     on_navigate(app, label, raw)
 }
 
+/// Sends an account's view to Google's sign-in page, aimed back at the app it
+/// was showing so the signed-in session lands where it started. Queued onto
+/// the main thread: it runs inside WebKit's navigation decision.
+fn send_to_sign_in(app: &AppHandle, label: &str, account_id: &str, suite: &str) {
+    let back = {
+        let state = app.state::<AppState>();
+        let desks = lock(&state);
+        if accounts::is_tab_id(suite) {
+            desks.tab(account_id, suite).map(|tab| tab.url.clone())
+        } else {
+            None
+        }
+        .or_else(|| accounts::suite_url(suite).map(str::to_owned))
+        .unwrap_or_else(|| "https://mail.google.com/".to_owned())
+    };
+    let url = policy::sign_in_url(&back);
+    let app = app.clone();
+    let label = label.to_owned();
+    let _ = app
+        .clone()
+        .run_on_main_thread(move || {
+        let Ok(url) = url::Url::parse(&url) else {
+            return;
+        };
+        if let Some(webview) = app.get_webview(&label)
+            && let Err(err) = webview.navigate(url)
+        {
+            log::warn!("sign-in page did not open: {err}");
+        }
+    });
+}
+
 pub fn surface_label(account_id: &str, suite: &str) -> String {
     format!("view-{account_id}-{suite}")
 }
@@ -757,6 +789,24 @@ fn on_navigate(app: &AppHandle, label: &str, raw: &str) -> bool {
             }
         });
         return false;
+    }
+    // The feed view is only ever pointed at the unread feed. Landing on a
+    // sign-in page means the session is gone; note it and keep the login page
+    // out of the hidden view, so an unattended account does not hammer it
+    // every poll.
+    if let Some((account_id, suite)) = split_label(label) {
+        if suite == crate::lifecycle::POLL_SUITE {
+            if policy::is_sign_in(raw) {
+                crate::lifecycle::on_signed_out(app, account_id);
+                return false;
+            }
+        } else if policy::is_signed_out_marketing(raw) {
+            // A signed-out session gets dumped on Google's marketing pages,
+            // which have no way back. The view goes to the sign-in page
+            // instead, pointed at what it was showing.
+            send_to_sign_in(app, label, account_id, suite);
+            return false;
+        }
     }
     // Meet links are not handed off here. This hook also sees navigations in
     // frames, and Gmail and Calendar keep hidden Meet frames that reload on

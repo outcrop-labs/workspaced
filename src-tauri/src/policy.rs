@@ -24,6 +24,12 @@ pub const PROPERTY_SUFFIXES: &[&str] = &[
     "recaptcha.net",
     "g.co",
     "goo.gl",
+    // Google's sign-in and sign-out journeys route through its ad-attribution
+    // hosts before landing back on a Google page. Left off this list they were
+    // cancelled in the webview and handed to the system browser, where an
+    // ad blocker kills the chain and the sign-in never arrives.
+    "doubleclick.net",
+    "googleadservices.com",
 ];
 
 pub fn is_sentinel(url: &str) -> bool {
@@ -95,6 +101,62 @@ fn is_country_tld(tld: &str) -> bool {
 
 fn is_cc(label: &str) -> bool {
     label.len() == 2 && label.bytes().all(|b| b.is_ascii_lowercase())
+}
+
+/// Google's sign-in page, in any of the shapes a signed-out redirect takes.
+pub fn is_sign_in(url: &str) -> bool {
+    let Ok(url) = url::Url::parse(url) else {
+        return false;
+    };
+    if url.host_str() != Some("accounts.google.com") {
+        return false;
+    }
+    url.path_segments().is_some_and(|mut parts| {
+        matches!(
+            parts.next(),
+            Some("ServiceLogin" | "signin" | "AccountChooser")
+        )
+    })
+}
+
+/// The marketing pages a signed-out session gets dumped on. They carry no way
+/// back to the app, so an account view that lands on one goes to the sign-in
+/// page instead. Deliberate sign-out is not intercepted: its own flow has to
+/// finish clearing the session first.
+pub fn is_signed_out_marketing(url: &str) -> bool {
+    let Ok(url) = url::Url::parse(url) else {
+        return false;
+    };
+    let Some(host) = url.host_str() else {
+        return false;
+    };
+    let host = host.trim_end_matches('.').to_ascii_lowercase();
+    if host == "one.google.com" {
+        return true;
+    }
+    let host = host.strip_prefix("www.").unwrap_or(&host);
+    if host != "google.com" && !is_google_country_host(host) {
+        return false;
+    }
+    let segments: Vec<_> = url
+        .path_segments()
+        .map(|parts| parts.filter(|part| !part.is_empty()).collect())
+        .unwrap_or_default();
+    segments.windows(2).any(|pair| pair == ["gmail", "about"])
+}
+
+/// The sign-in page for an account view, pointed back at the app it was
+/// showing so the session lands where it started once signed in.
+pub fn sign_in_url(continue_url: &str) -> String {
+    let continue_url = url::Url::parse(continue_url)
+        .ok()
+        .filter(|url| is_in_app_host(url.host_str().unwrap_or_default()))
+        .unwrap_or_else(|| url::Url::parse("https://mail.google.com/").unwrap());
+    let mut url =
+        url::Url::parse("https://accounts.google.com/ServiceLogin").expect("static url parses");
+    url.query_pairs_mut()
+        .append_pair("continue", continue_url.as_str());
+    url.into()
 }
 
 pub fn sentinel(url: &str) -> Option<(String, serde_json::Value)> {
@@ -243,9 +305,66 @@ mod tests {
             "http://mail.google.com/",
             "about:blank",
             "blob:https://mail.google.com/uuid",
+            // The ad-attribution hops inside Google's sign-in and sign-out
+            // journeys. They bounce back to a Google page; keeping them in
+            // the app is what lets the journey finish.
+            "https://googleads.g.doubleclick.net/pagead/conversion/123",
+            "https://www.googleadservices.com/pagead/aclk?ai=1",
         ] {
             assert!(is_in_app(url), "{url} should stay in app");
         }
+    }
+
+    #[test]
+    fn sign_in_pages_are_recognised() {
+        for url in [
+            "https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fmail.google.com%2F",
+            "https://accounts.google.com/AccountChooser?continue=x",
+            "https://accounts.google.com/signin/v2/identifier",
+        ] {
+            assert!(is_sign_in(url), "{url} is a sign-in page");
+        }
+        for url in [
+            "https://accounts.google.com/Logout",
+            "https://myaccount.google.com/",
+            "https://mail.google.com/",
+            "https://accounts.evil.com/ServiceLogin",
+        ] {
+            assert!(!is_sign_in(url), "{url} is not a sign-in page");
+        }
+    }
+
+    #[test]
+    fn signed_out_marketing_is_recognised() {
+        for url in [
+            "https://www.google.com/gmail/about/",
+            "https://www.google.com/intl/en_us/gmail/about/",
+            "https://google.de/gmail/about/",
+            "https://one.google.com/about/gmail",
+        ] {
+            assert!(is_signed_out_marketing(url), "{url} is marketing");
+        }
+        for url in [
+            "https://www.google.com/",
+            "https://www.google.com/search?q=gmail",
+            "https://mail.google.com/gmail/about/",
+            "https://workspace.google.com/",
+            "https://accounts.google.com/ServiceLogin",
+            "https://one.google.com.evil.com/",
+        ] {
+            assert!(!is_signed_out_marketing(url), "{url} is not marketing");
+        }
+    }
+
+    #[test]
+    fn sign_in_urls_point_back_at_the_app() {
+        assert_eq!(
+            sign_in_url("https://calendar.google.com/calendar/r"),
+            "https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fcalendar.google.com%2Fcalendar%2Fr"
+        );
+        // Anything not in-app falls back to mail, and garbage parses.
+        assert!(sign_in_url("https://evil.com/").contains("mail.google.com"));
+        assert!(sign_in_url("not a url").contains("mail.google.com"));
     }
 
     #[test]

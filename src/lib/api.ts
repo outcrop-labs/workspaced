@@ -59,6 +59,8 @@ export type Snapshot = {
 	callsNative: boolean;
 	/** Accounts whose views are closed while a small feed view watches for mail. */
 	asleep: string[];
+	/** Accounts whose session has died and whose mail needs signing in again. */
+	signedOut: string[];
 	/** Minutes before an unused account sleeps, or null to keep every account loaded. */
 	sleepAfter: number | null;
 	pageTheme: PageTheme;
