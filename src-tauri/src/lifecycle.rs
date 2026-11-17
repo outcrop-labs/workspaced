@@ -19,6 +19,10 @@ use crate::sessions::{self, AppState, lock};
 pub const FEED: &str = "https://mail.google.com/mail/u/0/feed/atom";
 pub const POLL_SUITE: &str = "poll";
 const POLL_EVERY: Duration = Duration::from_secs(120);
+/// A signed-out account rechecks this slowly: the feed only redirects to the
+/// sign-in page, and an unattended client hammering the login every couple of
+/// minutes is exactly what Google's session security distrusts.
+const POLL_SIGNED_OUT_EVERY: Duration = Duration::from_secs(15 * 60);
 const TICK: Duration = Duration::from_secs(20);
 
 #[derive(Default)]
@@ -27,6 +31,9 @@ struct Life {
     left: HashMap<String, Instant>,
     asleep: HashSet<String>,
     polled: HashMap<String, Instant>,
+    /// Accounts whose feed poll landed on a sign-in page. Their session is
+    /// gone and mail needs signing in again.
+    signed_out: HashSet<String>,
     /// Message ids already shown, per account. Absent until the first poll,
     /// which only records what is there and announces nothing.
     seen: HashMap<String, HashSet<String>>,
@@ -45,6 +52,19 @@ pub fn is_asleep(id: &str) -> bool {
 
 pub fn asleep() -> Vec<String> {
     with(|life| life.asleep.iter().cloned().collect())
+}
+
+/// Accounts whose session has died and whose mail needs signing in again.
+pub fn signed_out() -> Vec<String> {
+    with(|life| life.signed_out.iter().cloned().collect())
+}
+
+/// The feed poll landed on a sign-in page: the account's session is gone.
+pub fn on_signed_out(app: &AppHandle, id: &str) {
+    if with(|life| life.signed_out.insert(id.to_owned())) {
+        log::info!("account {id} is signed out; its mail needs signing in again");
+        let _ = sessions::deliver(app);
+    }
 }
 
 /// The account stopped being the active one, so its sleep timer starts.
@@ -83,10 +103,12 @@ fn tick(app: &AppHandle) -> Result<()> {
     for id in ids.iter().filter(|id| Some(*id) != active.as_ref()) {
         let (asleep, idle, due) = with(|life| {
             let idle = life.left.get(id).map(|at| at.elapsed());
-            let due = life
-                .polled
-                .get(id)
-                .is_none_or(|at| at.elapsed() >= POLL_EVERY);
+            let every = if life.signed_out.contains(id) {
+                POLL_SIGNED_OUT_EVERY
+            } else {
+                POLL_EVERY
+            };
+            let due = life.polled.get(id).is_none_or(|at| at.elapsed() >= every);
             (life.asleep.contains(id), idle, due)
         });
         if asleep {
@@ -127,6 +149,9 @@ pub fn wake(app: &AppHandle, id: &str) {
     log::info!("account {id} is awake");
     with(|life| {
         life.polled.remove(id);
+        // Its views show the sign-in page if the session is still gone, and
+        // the next sleep discovers the state again.
+        life.signed_out.remove(id);
     });
     if let Some(webview) = app.get_webview(&sessions::surface_label(id, POLL_SUITE)) {
         let _ = webview.close();
@@ -176,6 +201,9 @@ pub fn on_feed(app: &AppHandle, id: &str, feed: Feed) {
         return;
     }
     log::debug!("account {id} feed: {} unread", feed.count);
+    with(|life| {
+        life.signed_out.remove(id);
+    });
     let ids = feed
         .entries
         .iter()

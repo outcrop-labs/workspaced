@@ -188,6 +188,8 @@ pub struct Snapshot {
     pub calls_native: bool,
     /// Accounts whose views are closed while a feed view watches for mail.
     pub asleep: Vec<String>,
+    /// Accounts whose session has died: their mail needs signing in again.
+    pub signed_out: Vec<String>,
     pub sleep_after: Option<u32>,
     pub page_theme: PageTheme,
     pub suite: Vec<SuiteItem>,
@@ -332,6 +334,7 @@ impl DeskState {
             call_browser: crate::calls::browser().map(|(_, name)| name.to_owned()),
             calls_native: crate::calls::native(),
             asleep: crate::lifecycle::asleep(),
+            signed_out: crate::lifecycle::signed_out(),
             sleep_after: self.sleep_after,
             page_theme: self.page_theme,
             suite: SUITE
