@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.3](https://github.com/outcrop-labs/workspaced/compare/workspaced-v0.1.2...workspaced-v0.1.3) (2026-11-17)
+
+
+### Bug Fixes
+
+* bring signed-out accounts back to Google sign-in ([853c407](https://github.com/outcrop-labs/workspaced/commit/853c407d11fcf44cff062f085f025858e3267c65))
+* bring signed-out accounts back to Google sign-in ([64b501b](https://github.com/outcrop-labs/workspaced/commit/64b501bf4b2a98e5e9320d214da63f8c69c6d336))
+
 ## [0.1.2](https://github.com/outcrop-labs/workspaced/compare/workspaced-v0.1.1...workspaced-v0.1.2) (2026-11-03)
 
 
