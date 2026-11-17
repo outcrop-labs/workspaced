@@ -227,9 +227,7 @@ fn send_to_sign_in(app: &AppHandle, label: &str, account_id: &str, suite: &str) 
     let url = policy::sign_in_url(&back);
     let app = app.clone();
     let label = label.to_owned();
-    let _ = app
-        .clone()
-        .run_on_main_thread(move || {
+    let _ = app.clone().run_on_main_thread(move || {
         let Ok(url) = url::Url::parse(&url) else {
             return;
         };
